@@ -11,14 +11,15 @@ tela = pg.display.set_mode((LARGURA, ALTURA))
 
 class Controles:
     MODELO_BOTOES = ("cir", "ret")
-    botoes = list()
+    botoes = dict()
     
     def __init__(self, tela):
         self.tela = tela
     
     def novo_botao(
         self,
-        id, 
+        id_botao,
+        id_categoria, 
         rect = None,
         cor = (0, 20, 100),
         formato = "cir",
@@ -26,38 +27,99 @@ class Controles:
         radius = 100
     ):
         if formato in self.MODELO_BOTOES:
-            if formato == self.MODELO_BOTOES[0]:
+            """if formato == self.MODELO_BOTOES[0]:
                 botao_atual = pg.draw.circle(
                     surface = self.tela,
                     color= cor,
                     center = pos_xy,
                     radius = radius
                 )
+                print(botao_atual)
             elif formato == self.MODELO_BOTOES[1]:
                 botao_atual = pg.draw.rect(
                     surface = self.tela,
                     color = cor,
                     rect = rect,
                     border_radius = radius
-                )
-            self.botoes.append({id: botao_atual})
+                )"""
+            if formato == self.MODELO_BOTOES[0]:
+                self.botoes[id_botao] = {
+                    "rect_botao": pg.Rect(
+                        pos_xy[0] - radius,
+                        pos_xy[1] - radius,
+                        radius * 2,
+                        radius * 2
+                    ),
+                    "status": False,
+                    "formato": formato,
+                    "cor": cor,
+                    "categoria": id_categoria
+                }
+            elif formato == self.MODELO_BOTOES[1]:
+                self.botoes[id_botao] = {
+                    "rect_botao": rect,
+                    "status": False,
+                    "formato": formato,
+                    "cor": cor,
+                    "categoria": id_categoria
+                }
         else:
             raise ValueError(f"\"{formato}\" não é um MODELO válido.")
     
     def verificar_clique(self, id_botao) -> bool:
         estado_mouse = pg.mouse.get_pressed()
         pos_mouse = pg.mouse.get_pos()
-        if estado_mouse[0]:
-            # pegando o estado do primeiro botão do mouse
-            for botao in self.botoes:
-                if id_botao in botao:
-                    # verificando colisao do clique com o botão
-                    return botao[id_botao].collidepoint(pos_mouse)
-                    # print(f"Estou clicando no botão {id_botao}? ", botao[id_botao].collidepoint(pos_mouse))
-            
+        for k, v in self.botoes.items():
+            if id_botao == k and estado_mouse[0]:
+                if v["status"]:
+                    return v["status"]
+                # verificando colisao do clique com o botão
+                if v["rect_botao"].collidepoint(pos_mouse):
+                    for chave, valor in self.botoes.items():
+                        if chave != k:
+                            # definindo o status de todos os outros botões da mesma categoria  do botão atual como False
+                            if self.botoes[chave]["categoria"] == v["categoria"]:
+                                self.botoes[chave]["status"] = False
+                    # definindo o status do botão ativo para True
+                    self.botoes[k]["status"] = True
+                    return self.botoes[k]["status"]
+                # print(f"Estou clicando no botão {id_botao}? ", botao[id_botao].collidepoint(pos_mouse))"""
+            else:
+                # definindo o status de todos os botões da mesma categoria para False
+                for k, v in self.botoes.items():
+                    if v["categoria"] == self.botoes[id_botao]["categoria"]:
+                        self.botoes[k]["status"] = False
+    
+    def _desenhar_botoes(self):
+        for k, v in self.botoes.items():
+            if v["formato"] == self.MODELO_BOTOES[0]:
+                # desenhando botão do formato de circulo
+                pg.draw.circle(
+                    surface = self.tela,
+                    color = v["cor"],
+                    center = (
+                        v["rect_botao"][0] + (v["rect_botao"][-1] // 2),
+                        v["rect_botao"][1] + (v["rect_botao"][-1] // 2)
+                    ),
+                    radius = v["rect_botao"][-1] // 2
+                )
+            elif v["formato"] == self.MODELO_BOTOES[1]:
+                # desenhando botão do formato retângulo
+                pg.draw.rect(self.tela, v["cor"], v["rect_botao"])
+    
+    def atualizar(self):
+        self._desenhar_botoes()
+    
+    def set_status_botao(self, id, status):
+        if id in self.botoes.keys():
+            self.botoes[id]["status"] = status
+        else:
+            raise ValueError(f"\"{id}\" não é um id de botão válido.")
+
 
 if __name__ == "__main__":
     c1 = Controles(tela)
+    c2 = Controles(tela)
     
     x, y = [400, 100]
     velocidade = 2
@@ -66,20 +128,50 @@ if __name__ == "__main__":
     tamanho_extra = 1
     tamanho_atual = tamanho_normal
     
+    c1.novo_botao(
+        id_botao = "botao_esq",
+        id_categoria = "movimento",
+        pos_xy = (80, 800),
+        radius = 80
+    )
+    
+    c1.novo_botao(
+        id_botao = "botao_dir",
+        id_categoria = "movimento",
+        pos_xy = (300, 800),
+        radius = 80
+    )
+    
+    c1.novo_botao(
+        id_botao = "botao_cim",
+        id_categoria = "movimento",
+        pos_xy = (190, 680),
+        radius = 80
+    )
+    
+    c1.novo_botao(
+        id_botao = "botao_bai",
+        id_categoria = "movimento",
+        pos_xy = (190, 920),
+        radius = 80
+    )
+    
+    c2.novo_botao(
+        id_botao = "botao_expandir",
+        id_categoria = "poder1",
+        pos_xy = (2000, 800),
+        radius = 90,
+        cor = (0, 200, 0)
+    )
+    
     while gameloop:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 gameloop = False
         tela.fill((30, 80, 100))
+        c1.atualizar()
         
         bola = pg.draw.circle(tela, (200, 200, 50), (x, y), tamanho_atual)
-        
-        c1.novo_botao(id = "botao_esq", pos_xy = (80, 800), radius = 80)
-        c1.novo_botao(id = "botao_dir", pos_xy = (300, 800), radius = 80)
-        c1.novo_botao(id = "botao_cim", pos_xy = (190, 680), radius = 80)
-        c1.novo_botao(id = "botao_bai", pos_xy = (190, 920), radius = 80)
-        
-        c1.novo_botao(id = "botao_expandir", pos_xy = (2000, 800), radius = 90, cor = (0, 200, 0))
         
         # c1.novo_botao(id = "botao_teste2", formato = "ret", rect = (200, 200, 250, 100), radius = 50)
         
@@ -92,7 +184,7 @@ if __name__ == "__main__":
         elif c1.verificar_clique("botao_bai"):
             y += velocidade
         
-        if c1.verificar_clique("botao_expandir"):
+        if c2.verificar_clique("botao_expandir"):
             tamanho_atual += tamanho_extra
         else:
             tamanho_atual = tamanho_normal
