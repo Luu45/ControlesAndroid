@@ -1,8 +1,9 @@
 import pygame as pg
+from random import randint
 
 pg.init()
 
-LARGURA, ALTURA = (500, 400)
+LARGURA, ALTURA = (920, 540)
 
 gameloop = True
 
@@ -115,45 +116,58 @@ class Controles:
             self.botoes[id]["status"] = status
         else:
             raise ValueError(f"\"{id}\" não é um id de botão válido.")
+    
+    @staticmethod
+    def cor_aleatoria(min = 0, max = 255) -> list:
+        cor = list()
+        for c in range(3):
+            cor.append(randint(min, max))
+        return cor
 
 
 if __name__ == "__main__":
     c1 = Controles(tela)
     c2 = Controles(tela)
+    c3 = Controles(tela)
     
     x, y = [400, 100]
     velocidade = 2
     
-    tamanho_normal = 80
+    # tamanho_normal = 80
+    tamanho_normal = 40
     tamanho_extra = 1
     tamanho_atual = tamanho_normal
     
     c1.novo_botao(
         id_botao = "botao_esq",
         id_categoria = "movimento",
-        pos_xy = (80, 800),
-        radius = 80
+        # pos_xy = (80, 800),
+        pos_xy = (80, 400),
+        radius = 35
     )
     
     c1.novo_botao(
         id_botao = "botao_dir",
         id_categoria = "movimento",
-        pos_xy = (300, 800),
-        radius = 80
+        # pos_xy = (300, 800),
+        pos_xy = (190, 400),
+        radius = 35
     )
     
     c1.novo_botao(
         id_botao = "botao_cim",
         id_categoria = "movimento",
-        pos_xy = (190, 680),
-        radius = 80
+        # pos_xy = (190, 680),
+        pos_xy = (135, 340),
+        radius = 35
     )
     
     c1.novo_botao(
         id_botao = "botao_bai",
         id_categoria = "movimento",
-        pos_xy = (190, 920),
-        radius = 80
+        # pos_xy = (190, 920),
+        pos_xy = (135, 460),
+        radius = 35
     )
     
     c2.novo_botao(
@@ -164,6 +178,21 @@ if __name__ == "__main__":
         cor = (0, 200, 0)
     )
     
+    c3.novo_botao(
+        id_botao = "disparar",
+        id_categoria = "arma1",
+        pos_xy = (800, 400),
+        radius = 50,
+        cor = (100, 0, 0)
+    )
+    
+    rect_bala = None
+    bala_x = x
+    bala_y = y
+    bala_visivel = False
+    velocidade_bala = 20
+    indicador_xy = [40, 0]
+    
     while gameloop:
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -172,17 +201,61 @@ if __name__ == "__main__":
         c1.atualizar()
         
         bola = pg.draw.circle(tela, (200, 200, 50), (x, y), tamanho_atual)
+        indicador = pg.draw.circle(tela, (200, 0, 0), (x + indicador_xy[0], y + indicador_xy[1]), 2)
         
         # c1.novo_botao(id = "botao_teste2", formato = "ret", rect = (200, 200, 250, 100), radius = 50)
         
         if c1.verificar_clique("botao_esq"):
             x -= velocidade
+            if not bala_visivel:
+                indicador_xy[0] = -40
+                indicador_xy[1] = 0
         elif c1.verificar_clique("botao_dir"):
             x += velocidade
+            if not bala_visivel:
+                indicador_xy[0] = 40
+                indicador_xy[1] = 0
         if c1.verificar_clique("botao_cim"):
             y -= velocidade
+            if not bala_visivel:
+                indicador_xy[0] = 0
+                indicador_xy[1] = -40
         elif c1.verificar_clique("botao_bai"):
             y += velocidade
+            if not bala_visivel:
+                indicador_xy[0] = 0
+                indicador_xy[1] = 40
+        
+        if c3.verificar_clique("disparar"):
+            bala_visivel = True
+            print("disparado")
+        
+        if bala_visivel:
+            if bala_x >= LARGURA:
+                bala_x = x + indicador_xy[0]
+                bala_visivel = False
+            elif bala_x <= 0:
+                bala_x = x + indicador_xy[0]
+                bala_visivel = False
+            elif bala_y <= 0:
+                bala_y = y + indicador_xy[1]
+                bala_visivel = False
+            elif bala_y >= ALTURA:
+                bala_y = y + indicador_xy[1]
+                bala_visivel = False
+            else:
+                if indicador_xy[0] > 0:
+                    bala_x += velocidade_bala
+                elif indicador_xy[0] < 0:
+                    bala_x -= velocidade_bala
+                elif indicador_xy[1] < 0:
+                    bala_y -= velocidade_bala
+                elif indicador_xy[1] > 0:
+                    bala_y += velocidade_bala
+            rect_bala = pg.draw.circle(tela, Controles.cor_aleatoria(), (bala_x, bala_y), 5)
+        else:
+            bala_x = x + indicador_xy[0]
+            bala_y = y + indicador_xy[1]
         
         if c2.verificar_clique("botao_expandir"):
             tamanho_atual += tamanho_extra
